@@ -6,12 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-db": "node -r dotenv/config initializeFirestore.js"
   },
   "dependencies": {
-    "react": "^18",
-    "react-dom": "^18",
-    "next": "14.2.6"
+    "@supabase/supabase-js": "^2.45.2",
+    "dotenv": "^16.4.5",
+    "firebase": "^10.13.1",
+    "firebase-admin": "^12.5.0",
+    "mongodb": "^6.9.0",
+    "next": "^14.2.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "postcss": "^8",
