@@ -12,7 +12,7 @@ export default function Layout({ children }) {
       </header>
       
       <main className="flex-grow flex">
-        <div className="w-3/4 p-4">
+        <div className="w-4/4 p-4">
           {children}
         </div>
 
