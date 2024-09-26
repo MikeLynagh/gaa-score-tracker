@@ -71,7 +71,7 @@ export default function Fixture() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold mb-4 text-center">{fixture.competition || "Senior Football Championship"}</h1>
+      <h1 className="text-xl font-bold mb-4 text-center text-gray-800 ">{fixture.competition || "Club Football Championship"}</h1>
       <ScoreDisplay 
         teamA={fixture.homeTeam}
         teamB={fixture.awayTeam}
@@ -89,13 +89,15 @@ export default function Fixture() {
         onScoreUpdate={handleScoreUpdate} 
         />
       <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-4">Recent Score Updates</h3>
+        <h3 className="text-lg font-semibold mb-4 text-gray-900">Recent Score Updates</h3>
         {scoreUpdates.length > 0 ? (
           <ul className="space-y-2">
             {scoreUpdates.map(update => (
               <li key={update.id} className="bg-white p-2 rounded shadow">
+                <p className='text-sm font-medium text-gray-800'>
                 {update.teamA.goals}-{update.teamA.points} to {update.teamB.goals}-{update.teamB.points} 
-                <br />
+
+                </p>
                 <span className="text-xs text-gray-500">
                 {update.timestamp && update.timestamp.toDate ? update.timestamp.toDate().toLocaleString() : "No timestamp available"}
 

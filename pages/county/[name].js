@@ -56,16 +56,17 @@ export default function County() {
 
   return (
     <div className="px-4 py-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">{name} Fixtures</h1>
+
+      <h1 className="text-2xl font-bold mb-4 text-center text-gray-900">{name} Fixtures</h1>
       {fixtures.length > 0 ? (
-        <ul className="space-y-4">
+        <ul className="space-y-6 ">
           {fixtures.map(fixture => (
-            <li key={fixture.id} className="bg-white shadow rounded-lg overflow-hidden">
+            <li key={fixture.id} className="bg-white shadow border-b p-4 rounded-lg overflow-hidden">
               <Link href={`/fixture/${name}/${fixture.id}`}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold">{fixture.homeTeam}</span>
+                    <span className="font-semibold text-gray-900">{fixture.homeTeam}</span>
                     <span className="text-sm text-gray-500">vs</span>
-                    <span className="font-semibold">{fixture.awayTeam}</span>
+                    <span className="font-semibold text-gray-900">{fixture.awayTeam}</span>
                   </div>
                   <div className="text-sm text-gray-600">
                     <div>Date: {formatDate(fixture.date)}</div>

@@ -16,12 +16,12 @@ export default function Counties() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Counties</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 ">Counties</h1>
       <ul className="space-y-2">
         {counties.map(county => (
           <li key={county} className="bg-white shadow rounded-lg">
             <Link href={`/county/${county}`} className="block p-4 hover:bg-gray-50">
-              {county}
+            <span className='text-gray-900 dark:text-white font-medium'>{county}</span>
             </Link>
           </li>
         ))}

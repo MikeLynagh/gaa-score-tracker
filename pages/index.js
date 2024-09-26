@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { useEffect, useState, useRef, useCallback } from 'react'
+import UserStats from '@/components/UserStats'
 
 export default function Home() {
   const [counties, setCounties] = useState([])
@@ -54,6 +55,9 @@ export default function Home() {
         <Link href="/live" className="block w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded text-center font-semibold transition duration-150 ease-in-out">
           View Live Score Feed
         </Link>
+      </section>
+      <section>
+        <UserStats />
       </section>
       
       <section className="space-y-4">
