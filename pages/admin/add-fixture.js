@@ -4,21 +4,24 @@ import { getTeams } from '../../lib/teamUtils.js';
 
 export default function AddFixture() {
   const [fixture, setFixture] = useState({
-    county: 'Mayo',
+    county: '',
     competition: 'senior-football-championship',
-    teamA: '',
-    teamB: '',
+    homeTeam: '',
+    awayTeam: '',
     venue: '',
     date: '',
     time: '',
     status: 'Scheduled'
   });
   const [teams, setTeams] = useState([]);
+  const [counties, setCounties] = useState(['Mayo', 'Galway', 'Kerry']); // Add all your counties here
 
   useEffect(() => {
     async function fetchTeams() {
-      const fetchedTeams = await getTeams(fixture.county);
-      setTeams(fetchedTeams);
+      if (fixture.county) {
+        const fetchedTeams = await getTeams(fixture.county);
+        setTeams(fetchedTeams);
+      }
     }
     fetchTeams();
   }, [fixture.county]);
@@ -32,8 +35,8 @@ export default function AddFixture() {
     e.preventDefault();
     try {
       await addFixture(fixture.county, fixture.competition, {
-        homeTeam: fixture.teamA,
-        awayTeam: fixture.teamB,
+        homeTeam: fixture.homeTeam,
+        awayTeam: fixture.awayTeam,
         venue: fixture.venue || null,
         date: fixture.date ? new Date(fixture.date) : null,
         time: fixture.time || null,
@@ -41,10 +44,10 @@ export default function AddFixture() {
       });
       alert('Fixture added successfully');
       setFixture({
-        county: 'Mayo',
+        county: '',
         competition: 'senior-football-championship',
-        teamA: '',
-        teamB: '',
+        homeTeam: '',
+        awayTeam: '',
         venue: '',
         date: '',
         time: '',
@@ -61,14 +64,18 @@ export default function AddFixture() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block mb-1">County</label>
-          <input
-            type="text"
+          <select
             name="county"
             value={fixture.county}
             onChange={handleChange}
             className="w-full border rounded px-3 py-2"
             required
-          />
+          >
+            <option value="">Select County</option>
+            {counties.map(county => (
+              <option key={county} value={county}>{county}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block mb-1">Competition</label>
@@ -84,8 +91,8 @@ export default function AddFixture() {
         <div>
           <label className="block mb-1">Home Team</label>
           <select
-            name="teamA"
-            value={fixture.teamA}
+            name="homeTeam"
+            value={fixture.homeTeam}
             onChange={handleChange}
             className="w-full border rounded px-3 py-2"
             required
@@ -99,8 +106,8 @@ export default function AddFixture() {
         <div>
           <label className="block mb-1">Away Team</label>
           <select
-            name="teamB"
-            value={fixture.teamB}
+            name="awayTeam"
+            value={fixture.awayTeam}
             onChange={handleChange}
             className="w-full border rounded px-3 py-2"
             required
@@ -112,7 +119,7 @@ export default function AddFixture() {
           </select>
         </div>
         <div>
-          <label className="block mb-1">Venue (Optional)</label>
+          <label className="block mb-1">Venue</label>
           <input
             type="text"
             name="venue"
@@ -122,7 +129,7 @@ export default function AddFixture() {
           />
         </div>
         <div>
-          <label className="block mb-1">Date (Optional)</label>
+          <label className="block mb-1">Date</label>
           <input
             type="date"
             name="date"
@@ -132,7 +139,7 @@ export default function AddFixture() {
           />
         </div>
         <div>
-          <label className="block mb-1">Time (Optional)</label>
+          <label className="block mb-1">Time</label>
           <input
             type="time"
             name="time"

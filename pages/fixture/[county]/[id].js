@@ -14,6 +14,7 @@ export default function Fixture() {
     teamA: { goals: 0, points: 0 }, 
     teamB: { goals: 0, points: 0 } 
   });
+  const [lastAddedScore, setLastAddedScore] = useState(null);
 
   useEffect(() => {
     async function fetchFixture() {
@@ -38,9 +39,11 @@ export default function Fixture() {
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const updates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setScoreUpdates(updates);
-        if (updates.length > 0) {
-          setCurrentScore(updates[0]);
+        
+        // Only update if the new score is different from the last added score
+        setScoreUpdates(updates)
+        if(updates.length > 0){
+          setCurrentScore(updates[0])
         }
       });
 
@@ -51,11 +54,16 @@ export default function Fixture() {
   const handleScoreUpdate = async (newScore) => {
     if (county && id) {
       const scoresRef = collection(db, 'counties', county, 'competitions', 'senior-football-championship', 'fixtures', id, 'scores');
-      await addDoc(scoresRef, {
-        ...newScore,
-        timestamp: new Date(),
-        submittedBy: "anonymous" // You can replace this with a user ID if you implement authentication
-      });
+      try{
+        await addDoc(scoresRef, {
+          ...newScore, 
+          timestamp: new Date(),
+          submittedBy: "anonymous"
+        });
+
+      } catch (error){
+        console.error("Error submitting score", error)
+      }
     }
   };
 
@@ -71,7 +79,7 @@ export default function Fixture() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold mb-4 text-center text-gray-800 ">{fixture.competition || "Club Football Championship"}</h1>
+      <h1 className="text-xl font-bold mb-4 text-center text-gray-800">{fixture.competition || "Club Football Championship"}</h1>
       <ScoreDisplay 
         teamA={fixture.homeTeam}
         teamB={fixture.awayTeam}
@@ -82,12 +90,12 @@ export default function Fixture() {
         date={fixture.date ? new Date(fixture.date.seconds * 1000).toLocaleDateString() : "Date TBA"}
         time={fixture.time || "Time TBA"}
       />
-        <PlayInput 
+      <PlayInput 
         fixtureId={id} 
         county={county}
         currentScore={currentScore} 
         onScoreUpdate={handleScoreUpdate} 
-        />
+      />
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-4 text-gray-900">Recent Score Updates</h3>
         {scoreUpdates.length > 0 ? (
@@ -95,12 +103,10 @@ export default function Fixture() {
             {scoreUpdates.map(update => (
               <li key={update.id} className="bg-white p-2 rounded shadow">
                 <p className='text-sm font-medium text-gray-800'>
-                {update.teamA.goals}-{update.teamA.points} to {update.teamB.goals}-{update.teamB.points} 
-
+                  {update.teamA.goals}-{update.teamA.points} to {update.teamB.goals}-{update.teamB.points} 
                 </p>
                 <span className="text-xs text-gray-500">
-                {update.timestamp && update.timestamp.toDate ? update.timestamp.toDate().toLocaleString() : "No timestamp available"}
-
+                  {update.timestamp && update.timestamp.toDate ? update.timestamp.toDate().toLocaleString() : "No timestamp available"}
                 </span>
               </li>
             ))}
