@@ -3,7 +3,7 @@ import { addScoreUpdate } from '../lib/firestoreUtils';
 import useNotification from '@/hooks/useNotification';
 import Notification from "./Notification"
 
-function PlayInput({ fixtureId, county, currentScore, onScoreUpdate }) {
+function PlayInput({ fixtureId, county, competition, currentScore, onScoreUpdate }) {
   const [scores, setScores] = useState(currentScore);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { notification, showNotification} = useNotification()
@@ -35,14 +35,13 @@ function PlayInput({ fixtureId, county, currentScore, onScoreUpdate }) {
   const submitScores = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-
     try {
-      await addScoreUpdate(county, fixtureId, scores);
-      showNotification("Score updated successfully")
+      await addScoreUpdate(county, competition, fixtureId, scores);
+      showNotification("Score updated successfully");
       if (onScoreUpdate) onScoreUpdate(scores);
     } catch (error) {
       console.error("Error submitting score: ", error);
-      showNotification("failed to update score")
+      showNotification("Failed to update score");
     } finally {
       setIsSubmitting(false);
     }

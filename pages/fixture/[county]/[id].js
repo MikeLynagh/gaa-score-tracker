@@ -93,6 +93,7 @@ export default function Fixture() {
       <PlayInput 
         fixtureId={id} 
         county={county}
+        competition={competition}
         currentScore={currentScore} 
         onScoreUpdate={handleScoreUpdate} 
       />

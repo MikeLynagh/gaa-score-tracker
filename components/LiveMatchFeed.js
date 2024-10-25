@@ -48,25 +48,23 @@ export default function LiveMatchFeed() {
 
             const q = query(
               fixturesRef,
-              where('date', '>=', startOfDay),
-              where('date', '<=', endOfDay)
+              where('details.date', '>=', startOfDay),
+              where('details.date', '<=', endOfDay)
             );
 
             const fixturesSnapshot = await getDocs(q);
 
             fixturesSnapshot.forEach(doc => {
-              const fixtureData = doc.data();
+              const fixtureData = doc.data().details; // Access the details subcollection
               allMatches.push({
                 id: doc.id,
                 county: countyDoc.id,
-                competition: competitionDoc.id,
+                competition: competitionDoc.data().name, // Use competition name instead of ID
                 ...fixtureData,
               });
             });
           }
         }
-
-        console.log("All matches:", allMatches);
 
         const groupedMatches = allMatches.reduce((acc, match) => {
           if (!acc[match.county]) {
@@ -76,7 +74,6 @@ export default function LiveMatchFeed() {
           return acc;
         }, {});
 
-        console.log("Grouped matches:", groupedMatches);
         setMatches(groupedMatches);
       } catch (err) {
         console.error("Error fetching matches:", err);
