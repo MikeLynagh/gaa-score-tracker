@@ -1,5 +1,5 @@
-import { google } from 'googleapis';
-import { runImport } from '../../lib/importUtils';
+import { db } from '../../lib/firebase';
+import { collection, doc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,60 +7,48 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Starting import process...');
+    console.log('Received fixture data:', req.body);
+    const fixture = req.body;
     
-    // Debug: Check if we can access the credentials
-    if (!process.env.GOOGLE_CREDENTIALS) {
-      console.error('No credentials found in environment variables');
-      return res.status(500).json({ 
-        message: 'Missing Google credentials in environment' 
-      });
-    }
+    // Format the competition ID
+    const competitionId = fixture.competition.toLowerCase().replace(/\s+/g, '-');
+    
+    // Create county if it doesn't exist
+    const countyRef = doc(db, 'counties', fixture.county);
+    await setDoc(countyRef, { name: fixture.county }, { merge: true });
+    
+    // Create competition if it doesn't exist
+    const competitionRef = doc(db, 'counties', fixture.county, 'competitions', competitionId);
+    await setDoc(competitionRef, {
+      name: fixture.competition,
+      createdAt: Timestamp.now()
+    }, { merge: true });
+    
+    // Add the fixture
+    const fixturesRef = collection(db, 'counties', fixture.county, 'competitions', competitionId, 'fixtures');
+    await addDoc(fixturesRef, {
+      details: {
+        homeTeam: fixture.homeTeam,
+        awayTeam: fixture.awayTeam,
+        venue: fixture.venue,
+        date: new Date(fixture.date),
+        time: fixture.time,
+        status: 'Scheduled',
+        source: 'hoganstand',
+        lastUpdated: Timestamp.now()
+      }
+    });
 
-    try {
-      // Debug: Log credential structure (don't log the actual values)
-      const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-      console.log('Credential keys present:', Object.keys(credentials));
+    console.log('Successfully added fixture:', fixture.homeTeam, 'vs', fixture.awayTeam);
+    res.status(200).json({ 
+      message: 'Fixture added successfully',
+      details: `${fixture.homeTeam} vs ${fixture.awayTeam}`
+    });
 
-      const auth = new google.auth.GoogleAuth({
-        credentials: credentials,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-      });
-      console.log('Auth initialized successfully');
-
-      // Test the auth
-      const client = await auth.getClient();
-      // Test Google Sheets API access
-const sheets = google.sheets({ version: 'v4', auth: client });
-try {
-  const response = await sheets.spreadsheets.get({
-    spreadsheetId: process.env.SPREADSHEET_ID,  // Replace with your actual Spreadsheet ID or environment variable
-  });
-  console.log('Successfully accessed the Google Sheets API');
-} catch (sheetsError) {
-  console.error('Google Sheets API access failed:', sheetsError.message);
-  return res.status(500).json({
-    message: 'Failed to access Google Sheets API',
-    error: sheetsError.message,
-  });
-}
-
-      console.log('Client created successfully');
-
-      await runImport(auth);
-      res.status(200).json({ message: 'Import successful' });
-    } catch (authError) {
-      console.error('Auth error details:', authError);
-      res.status(500).json({ 
-        message: 'Authentication failed', 
-        error: authError.message,
-        details: 'Check credentials format and permissions'
-      });
-    }
   } catch (error) {
-    console.error('General error:', error);
+    console.error('Error adding fixture:', error);
     res.status(500).json({ 
-      message: 'Import failed', 
+      message: 'Error adding fixture', 
       error: error.message 
     });
   }
