@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import Link from 'next/link';
 
 export default function Feedback() {
   const [type, setType] = useState('feedback');
