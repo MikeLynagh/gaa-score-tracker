@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { db } from '../../lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { getFixturesForCounty } from '../../lib/firestoreUtils';
 
 export default function County() {
   const router = useRouter();
@@ -16,13 +15,7 @@ export default function County() {
       if (name) {
         try {
           setLoading(true);
-          const fixturesRef = collection(db, 'counties', name, 'competitions', 'senior-football-championship', 'fixtures');
-          const fixturesQuery = query(fixturesRef, orderBy('date', 'asc'));
-          const fixturesSnapshot = await getDocs(fixturesQuery);
-          const fixturesList = fixturesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
+          const fixturesList = await getFixturesForCounty(name);
           setFixtures(fixturesList);
         } catch (error) {
           console.error("Error fetching fixtures:", error);
@@ -56,24 +49,27 @@ export default function County() {
 
   return (
     <div className="px-4 py-6">
-
       <h1 className="text-2xl font-bold mb-4 text-center text-gray-900">{name} Fixtures</h1>
       {fixtures.length > 0 ? (
-        <ul className="space-y-6 ">
+        <ul className="space-y-6">
           {fixtures.map(fixture => (
             <li key={fixture.id} className="bg-white shadow border-b p-4 rounded-lg overflow-hidden">
-              <Link href={`/fixture/${name}/${fixture.id}`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-gray-900">{fixture.homeTeam}</span>
-                    <span className="text-sm text-gray-500">vs</span>
-                    <span className="font-semibold text-gray-900">{fixture.awayTeam}</span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <div>Date: {formatDate(fixture.date)}</div>
-                    <div>Venue: {fixture.venue || 'TBA'}</div>
-                  </div>
-                
-              </Link>
+              <Link href={`/fixture/${name}/${fixture.competitionId}/${fixture.id}`}>
+  <div className="flex flex-col gap-2">
+    <div className="text-sm font-medium text-gray-600">{fixture.competitionName}</div>
+    <div className="flex justify-between items-center mb-2">
+      <span className="font-semibold text-gray-900">{fixture.homeTeam}</span>
+      <span className="text-sm text-gray-500">vs</span>
+      <span className="font-semibold text-gray-900">{fixture.awayTeam}</span>
+    </div>
+    <div className="text-sm text-gray-600">
+      <div>Date: {formatDate(fixture.date)}</div>
+      <div>Venue: {fixture.venue || 'TBA'}</div>
+      <div>Time: {fixture.time || 'TBA'}</div>
+    </div>
+  </div>
+</Link>
+
             </li>
           ))}
         </ul>
