@@ -90,7 +90,7 @@ export default function LiveMatchFeed() {
     fetchMatches();
   }, [selectedDate]);
 
-  
+
   const formatDate = (date) => {
     return date.toLocaleDateString('en-GB', { 
       weekday: 'short', 
@@ -105,59 +105,104 @@ export default function LiveMatchFeed() {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Matches</h1>
+    <div className="p-4 bg-gray-50">
+      <h1 className="text-xl font-bold mb-4 text-gray-900">Matches</h1>
       
-      <div className="mb-4 flex space-x-2 overflow-x-auto pb-2">
-        {dates.map(date => (
-          <button
-            key={date.toISOString()}
-            onClick={() => setSelectedDate(date)}
-            className={`px-3 py-2 text-sm rounded-full flex-shrink-0 ${
-              selectedDate.toDateString() === date.toDateString() 
-                ? 'bg-green-500 text-white' 
-                : 'bg-gray-200 text-gray-800'
-            }`}
-          >
-            {formatDate(date)}
-          </button>
-        ))}
+      {/* Date Selector - Optimized for touch */}
+      <div className="mb-4 -mx-4 px-4 overflow-x-auto">
+        <div className="flex space-x-2 min-w-max">
+          {dates.map(date => (
+            <button
+              key={date.toISOString()}
+              onClick={() => setSelectedDate(date)}
+              className={`h-10 px-4 rounded-full text-base flex items-center justify-center
+                ${selectedDate.toDateString() === date.toDateString() 
+                  ? 'bg-green-500 text-white font-medium' 
+                  : 'bg-white text-gray-700 border'}`}
+            >
+              {formatDate(date)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
-        <p className="text-center py-4">Loading matches...</p>
+        <div className="flex justify-center py-8">
+          <p className="text-gray-600">Loading matches...</p>
+        </div>
       ) : error ? (
-        <p className="text-center py-4 text-red-500">{error}</p>
+        <div className="bg-red-50 p-4 rounded-lg">
+          <p className="text-red-600">{error}</p>
+        </div>
       ) : Object.keys(matches).length === 0 ? (
-        <p className="text-center py-4">No matches scheduled for this date.</p>
+        <div className="bg-white p-6 rounded-lg text-center">
+          <p className="text-gray-600">No matches scheduled for this date.</p>
+        </div>
       ) : (
         Object.entries(matches).map(([county, countyMatches]) => (
           <div key={county} className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">{county}</h2>
-            {countyMatches.map(match => (
-              <Link 
-                key={match.id} 
-                href={`/fixture/${county}/${match.competitionId}/${match.id}`}
-              >
-                <div className="bg-white p-4 rounded-lg shadow mb-2">
-                  <p className="text-sm text-gray-600">{match.competition}</p>
-                  <div className="flex justify-between items-center">
-                    <p className="font-semibold">{match.homeTeam} vs {match.awayTeam}</p>
+            {/* County Header */}
+            <h2 className="text-lg font-semibold mb-3 text-gray-900 pl-1">{county}</h2>
+            
+            {/* Matches List */}
+            <div className="space-y-3">
+              {countyMatches.map(match => (
+                <Link 
+                  key={match.id}
+                  href={`/fixture/${county}/${match.competitionId}/${match.id}`}
+                >
+                  <div className="bg-white rounded-lg p-4 shadow-sm active:bg-gray-50">
+                    {/* Competition Name */}
+                    <div className="text-sm font-medium text-gray-600 mb-2">
+                      {match.competition}
+                    </div>
+                    
+                    {/* Teams */}
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex-1 text-left">
+                        <span className="text-base font-semibold text-gray-900">
+                          {match.homeTeam}
+                        </span>
+                      </div>
+                      <div className="px-3">
+                        <span className="text-sm text-gray-500">vs</span>
+                      </div>
+                      <div className="flex-1 text-right">
+                        <span className="text-base font-semibold text-gray-900">
+                          {match.awayTeam}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Match Details */}
+                    <div className="flex justify-between items-center text-sm text-gray-600">
+                      <div>{match.venue}</div>
+                      <div>{match.time}</div>
+                    </div>
+
+                    {/* Match Status */}
+                    {match.status && (
+                      <div className={`mt-2 text-sm font-medium
+                        ${match.status === 'Scheduled' ? 'text-green-600' :
+                          match.status === 'InProgress' ? 'text-blue-600' :
+                          'text-gray-600'}`}
+                      >
+                        {match.status}
+                      </div>
+                    )}
+
+                    {/* Latest Score if available */}
                     {match.latestScore && (
-                      <span className="text-sm font-medium text-gray-700">
-                        {formatScore(match.latestScore)}
-                      </span>
+                      <div className="mt-2 text-sm font-medium text-gray-900">
+                        Latest: {match.latestScore.teamA.goals}-{match.latestScore.teamA.points} 
+                        to 
+                        {match.latestScore.teamB.goals}-{match.latestScore.teamB.points}
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {match.venue} | {new Date(match.date.seconds * 1000).toLocaleDateString()} | {match.time}
-                  </p>
-                  <p className="text-sm font-medium mt-1 text-green-600">
-                    {match.status}
-                  </p>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
         ))
       )}
