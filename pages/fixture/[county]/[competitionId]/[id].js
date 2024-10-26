@@ -43,18 +43,31 @@ export default function Fixture() {
     const scoresQuery = query(scoresRef, orderBy('timestamp', 'desc'));
 
     const unsubScores = onSnapshot(scoresQuery, (snapshot) => {
-      const updates = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
 
-      setScoreUpdates(updates);
-      if (updates.length > 0) {
-        setCurrentScore(updates[0]);
+      // deduplicate scores based on timestamp and values
+      const uniqueScores = snapshot.docs.reduce((acc, doc) => {
+        const scoreData = doc.data()
+        const key = `${scoreData.timestamp.seconds}-${scoreData.teamA.goals}-${scoreData.teamA.points}-${scoreData.teamB.goals}-${scoreData.teamB.points}`;
+
+        if(!acc[key]){
+          acc[key] = {
+            id: doc.id,
+            ...scoreData
+          }
+        }
+        return acc
+      }, {})
+
+
+      const updates = Object.values(uniqueScores)
+      setScoreUpdates(updates)
+
+      if (updates.length > 0){
+        setCurrentScore(updates[0])
       }
-      setIsLoading(false);
-    });
-
+      setIsLoading(false)
+    })
+    
     return () => unsubScores();
   }, [county, competitionId, id]);
 

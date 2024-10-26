@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import Link from 'next/link';
 
 export default function LiveMatchFeed() {
   const [matches, setMatches] = useState({});
@@ -31,41 +32,44 @@ export default function LiveMatchFeed() {
       try {
         const countiesRef = collection(db, 'counties');
         const countiesSnapshot = await getDocs(countiesRef);
-
+  
         let allMatches = [];
-
+  
         for (const countyDoc of countiesSnapshot.docs) {
           const competitionsRef = collection(db, 'counties', countyDoc.id, 'competitions');
           const competitionsSnapshot = await getDocs(competitionsRef);
-
+  
           for (const competitionDoc of competitionsSnapshot.docs) {
             const fixturesRef = collection(db, 'counties', countyDoc.id, 'competitions', competitionDoc.id, 'fixtures');
             
-            const startOfDay = new Date(selectedDate);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(selectedDate);
-            endOfDay.setHours(23, 59, 59, 999);
-
-            const q = query(
-              fixturesRef,
-              where('details.date', '>=', startOfDay),
-              where('details.date', '<=', endOfDay)
-            );
-
-            const fixturesSnapshot = await getDocs(q);
-
-            fixturesSnapshot.forEach(doc => {
-              const fixtureData = doc.data().details; // Access the details subcollection
-              allMatches.push({
-                id: doc.id,
-                county: countyDoc.id,
-                competition: competitionDoc.data().name, // Use competition name instead of ID
-                ...fixtureData,
-              });
+            // Adjust date comparison for selected date
+            const selectedDateStart = new Date(selectedDate);
+            selectedDateStart.setHours(0, 0, 0, 0);
+            const selectedDateEnd = new Date(selectedDate);
+            selectedDateEnd.setHours(23, 59, 59, 999);
+  
+            // Update query to match date regardless of year
+            const fixturesSnapshot = await getDocs(fixturesRef);
+            
+            fixturesSnapshot.docs.forEach(doc => {
+              const fixtureData = doc.data().details;
+              const fixtureDate = fixtureData.date.toDate();
+              
+              // Check if month and day match, ignore year
+              if (fixtureDate.getDate() === selectedDate.getDate() && 
+                  fixtureDate.getMonth() === selectedDate.getMonth()) {
+                allMatches.push({
+                  id: doc.id,
+                  county: countyDoc.id,
+                  competitionId: competitionDoc.id,
+                  competition: competitionDoc.data().name,
+                  ...fixtureData,
+                });
+              }
             });
           }
         }
-
+  
         const groupedMatches = allMatches.reduce((acc, match) => {
           if (!acc[match.county]) {
             acc[match.county] = [];
@@ -73,7 +77,7 @@ export default function LiveMatchFeed() {
           acc[match.county].push(match);
           return acc;
         }, {});
-
+  
         setMatches(groupedMatches);
       } catch (err) {
         console.error("Error fetching matches:", err);
@@ -82,16 +86,22 @@ export default function LiveMatchFeed() {
         setIsLoading(false);
       }
     };
-
+  
     fetchMatches();
   }, [selectedDate]);
 
+  
   const formatDate = (date) => {
     return date.toLocaleDateString('en-GB', { 
       weekday: 'short', 
       day: '2-digit', 
       month: 'short' 
     }).toUpperCase();
+  };
+
+  const formatScore = (score) => {
+    if (!score) return '';
+    return `${score.teamA.goals}-${score.teamA.points} to ${score.teamB.goals}-${score.teamB.points}`;
   };
 
   return (
@@ -125,13 +135,28 @@ export default function LiveMatchFeed() {
           <div key={county} className="mb-6">
             <h2 className="text-xl font-semibold mb-2">{county}</h2>
             {countyMatches.map(match => (
-              <div key={match.id} className="bg-white p-4 rounded-lg shadow mb-2">
-                <p className="text-sm text-gray-600">{match.competition}</p>
-                <p className="font-semibold">{match.homeTeam} vs {match.awayTeam}</p>
-                <p className="text-sm text-gray-600">
-                  {match.venue} | {new Date(match.date.seconds * 1000).toLocaleDateString()} | {match.time}
-                </p>
-              </div>
+              <Link 
+                key={match.id} 
+                href={`/fixture/${county}/${match.competitionId}/${match.id}`}
+              >
+                <div className="bg-white p-4 rounded-lg shadow mb-2">
+                  <p className="text-sm text-gray-600">{match.competition}</p>
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold">{match.homeTeam} vs {match.awayTeam}</p>
+                    {match.latestScore && (
+                      <span className="text-sm font-medium text-gray-700">
+                        {formatScore(match.latestScore)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {match.venue} | {new Date(match.date.seconds * 1000).toLocaleDateString()} | {match.time}
+                  </p>
+                  <p className="text-sm font-medium mt-1 text-green-600">
+                    {match.status}
+                  </p>
+                </div>
+              </Link>
             ))}
           </div>
         ))
