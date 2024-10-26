@@ -28,7 +28,12 @@ export default function Layout({ children }) {
           </li>
           <li>
             <Link href="/live" className="block py-3 px-4 text-center text-sm">
-              <span className="block text-gray-800 dark:text-gray-200">See Matches</span>
+              <span className="block text-gray-800 dark:text-gray-200">Matches</span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/feedback" className="block py-3 px-4 text-center text-sm">
+              <span className="block text-gray-800 dark:text-gray-200">App Feedback</span>
             </Link>
           </li>
         </ul>

@@ -42,31 +42,33 @@ export default function LiveMatchFeed() {
           for (const competitionDoc of competitionsSnapshot.docs) {
             const fixturesRef = collection(db, 'counties', countyDoc.id, 'competitions', competitionDoc.id, 'fixtures');
             
-            // Adjust date comparison for selected date
-            const selectedDateStart = new Date(selectedDate);
-            selectedDateStart.setHours(0, 0, 0, 0);
-            const selectedDateEnd = new Date(selectedDate);
-            selectedDateEnd.setHours(23, 59, 59, 999);
+            const startOfDay = new Date(selectedDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(selectedDate);
+            endOfDay.setHours(23, 59, 59, 999);
   
-            // Update query to match date regardless of year
-            const fixturesSnapshot = await getDocs(fixturesRef);
-            
-            fixturesSnapshot.docs.forEach(doc => {
-              const fixtureData = doc.data().details;
-              const fixtureDate = fixtureData.date.toDate();
-              
-              // Check if month and day match, ignore year
-              if (fixtureDate.getDate() === selectedDate.getDate() && 
-                  fixtureDate.getMonth() === selectedDate.getMonth()) {
-                allMatches.push({
-                  id: doc.id,
-                  county: countyDoc.id,
-                  competitionId: competitionDoc.id,
-                  competition: competitionDoc.data().name,
-                  ...fixtureData,
-                });
-              }
-            });
+            const q = query(fixturesRef, where('details.date', '>=', startOfDay), where('details.date', '<=', endOfDay));
+            const fixturesSnapshot = await getDocs(q);
+  
+            for (const fixtureDoc of fixturesSnapshot.docs) {
+              const fixtureData = fixtureDoc.data().details;
+              const scoresRef = collection(fixturesRef, fixtureDoc.id, 'scores');
+              const latestScoreQuery = query(scoresRef, orderBy('timestamp', 'desc'), limit(1));
+              const latestScoreSnapshot = await getDocs(latestScoreQuery);
+  
+              const latestScore = latestScoreSnapshot.docs[0]?.data();
+              const officialResult = fixtureData.officialResult;
+  
+              allMatches.push({
+                id: fixtureDoc.id,
+                county: countyDoc.id,
+                competitionId: competitionDoc.id,
+                competition: competitionDoc.data().name,
+                ...fixtureData,
+                latestScore: officialResult || latestScore || null,
+                isOfficial: !!officialResult
+              });
+            }
           }
         }
   
@@ -90,7 +92,6 @@ export default function LiveMatchFeed() {
     fetchMatches();
   }, [selectedDate]);
 
-
   const formatDate = (date) => {
     return date.toLocaleDateString('en-GB', { 
       weekday: 'short', 
@@ -99,16 +100,10 @@ export default function LiveMatchFeed() {
     }).toUpperCase();
   };
 
-  const formatScore = (score) => {
-    if (!score) return '';
-    return `${score.teamA.goals}-${score.teamA.points} to ${score.teamB.goals}-${score.teamB.points}`;
-  };
-
   return (
     <div className="p-4 bg-gray-50">
       <h1 className="text-xl font-bold mb-4 text-gray-900">Matches</h1>
       
-      {/* Date Selector - Optimized for touch */}
       <div className="mb-4 -mx-4 px-4 overflow-x-auto">
         <div className="flex space-x-2 min-w-max">
           {dates.map(date => (
@@ -141,10 +136,8 @@ export default function LiveMatchFeed() {
       ) : (
         Object.entries(matches).map(([county, countyMatches]) => (
           <div key={county} className="mb-6">
-            {/* County Header */}
             <h2 className="text-lg font-semibold mb-3 text-gray-900 pl-1">{county}</h2>
             
-            {/* Matches List */}
             <div className="space-y-3">
               {countyMatches.map(match => (
                 <Link 
@@ -152,17 +145,20 @@ export default function LiveMatchFeed() {
                   href={`/fixture/${county}/${match.competitionId}/${match.id}`}
                 >
                   <div className="bg-white rounded-lg p-4 shadow-sm active:bg-gray-50">
-                    {/* Competition Name */}
                     <div className="text-sm font-medium text-gray-600 mb-2">
                       {match.competition}
                     </div>
                     
-                    {/* Teams */}
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex-1 text-left">
                         <span className="text-base font-semibold text-gray-900">
                           {match.homeTeam}
                         </span>
+                        {match.latestScore && (
+                          <span className="ml-2 font-medium text-gray-700 m-1">
+                            {match.latestScore.teamA.goals}-{match.latestScore.teamA.points}
+                          </span>
+                        )}
                       </div>
                       <div className="px-3">
                         <span className="text-sm text-gray-500">vs</span>
@@ -171,34 +167,36 @@ export default function LiveMatchFeed() {
                         <span className="text-base font-semibold text-gray-900">
                           {match.awayTeam}
                         </span>
+                        {match.latestScore && (
+                          <span className="mr-2 font-medium text-gray-700 m-1">
+                            {match.latestScore.teamB.goals}-{match.latestScore.teamB.points}
+                          </span>
+                        )}
                       </div>
                     </div>
                     
-                    {/* Match Details */}
                     <div className="flex justify-between items-center text-sm text-gray-600">
                       <div>{match.venue}</div>
                       <div>{match.time}</div>
                     </div>
 
-                    {/* Match Status */}
-                    {match.status && (
-                      <div className={`mt-2 text-sm font-medium
+                    <div className="mt-2 flex justify-between items-center">
+                      <span className={`text-sm font-medium
                         ${match.status === 'Scheduled' ? 'text-green-600' :
                           match.status === 'InProgress' ? 'text-blue-600' :
                           'text-gray-600'}`}
                       >
                         {match.status}
-                      </div>
-                    )}
-
-                    {/* Latest Score if available */}
-                    {match.latestScore && (
-                      <div className="mt-2 text-sm font-medium text-gray-900">
-                        Latest: {match.latestScore.teamA.goals}-{match.latestScore.teamA.points} 
-                        to 
-                        {match.latestScore.teamB.goals}-{match.latestScore.teamB.points}
-                      </div>
-                    )}
+                      </span>
+                      {match.latestScore && (
+                        <span className="text-xs text-gray-500 m-1">
+                          {match.isOfficial ? 'Final Score' : 
+                          'Latest Update: ' + 
+                            new Date(match.latestScore.timestamp.seconds * 1000)
+                              .toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
               ))}

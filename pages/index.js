@@ -42,7 +42,7 @@ export default function Home() {
             <p className="text-sm text-gray-600">Find fixtures</p>
           </div>
         </Link>
-        <Link href="/matches" 
+        <Link href="/live" 
           className="bg-white rounded-lg p-4 shadow-sm active:bg-gray-50">
           <div className="text-center">
             <h2 className="text-lg font-medium text-gray-900">Today's Games</h2>
